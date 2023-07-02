@@ -64,7 +64,10 @@ impl Reg {
             0x04 => Some(Reg::Pointer),
             0x05 => Some(Reg::Oscillator),
             0x06 => Some(Reg::Gpio),
-            x if (0x10..=0x1f).contains(&x) => U4::from_u8(x).map(Reg::GeneralPurpose),
+            x if (0x10..=0x1f).contains(&x) => {
+                let u4 = U4::from_u8(x & 0xf).unwrap();
+                Some(Reg::GeneralPurpose(u4))
+            }
             _ => None,
         }
     }
@@ -138,8 +141,7 @@ pub fn parse_op(word: ProgramWord) -> Option<Op> {
     fn build_u8(slice: &[Bit]) -> u8 {
         slice
             .iter()
-            .rev()
-            .fold(0, |acc, &b| if b.is_set() { acc * 2 + 1 } else { acc })
+            .fold(0, |acc, &b| if b.is_set() { acc * 2 + 1 } else { acc * 2 })
     }
 
     match word.bits() {
@@ -243,15 +245,45 @@ pub fn parse_op(word: ProgramWord) -> Option<Op> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unusual_byte_groupings)]
 mod tests {
+    use crate::utils::U4;
+
     use super::parse_op;
+    use super::DestMode::*;
     use super::Op::*;
+    use super::Reg;
 
     use super::ProgramWord;
 
     #[test]
     fn zero_is_nop() {
-        let word = ProgramWord::from_u16(0b000000000000).unwrap();
+        let word = ProgramWord::from_u16(0).unwrap();
         assert_eq!(parse_op(word), Some(Nop));
+    }
+
+    #[test]
+    fn parse_add() {
+        let test_data = [
+            (0b000111_0_00000, Add(Reg::Indirect, IntoW)),
+            (0b000111_1_00000, Add(Reg::Indirect, Inplace)),
+            (
+                0b000111_1_10001,
+                Add(Reg::GeneralPurpose(U4::from_u8(1).unwrap()), Inplace),
+            ),
+            (
+                0b000111_1_10011,
+                Add(Reg::GeneralPurpose(U4::from_u8(0b0011).unwrap()), Inplace),
+            ),
+            (
+                0b000111_1_11010,
+                Add(Reg::GeneralPurpose(U4::from_u8(0b1010).unwrap()), Inplace),
+            ),
+        ];
+
+        for (i, (raw, expected)) in test_data.into_iter().enumerate() {
+            let word = ProgramWord::from_u16(raw).unwrap();
+            assert_eq!(parse_op(word), Some(expected), "Test case #{}", i + 1);
+        }
     }
 }
