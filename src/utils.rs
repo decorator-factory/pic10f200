@@ -20,7 +20,7 @@ impl Bit {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct U4(u8);
 
 impl U4 {
@@ -46,7 +46,7 @@ impl U4 {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct U3(u8);
 
 impl U3 {

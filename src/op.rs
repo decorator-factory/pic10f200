@@ -3,7 +3,7 @@ use crate::utils::{
     U3, U4,
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProgramWord(u16);
 
 impl ProgramWord {
@@ -42,7 +42,7 @@ impl ProgramWord {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reg {
     Indirect,            // INDF
     Timer,               // TMR0
@@ -70,7 +70,7 @@ impl Reg {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Destination mode. Describes where the result of an instruction is stored.
 ///
 pub enum DestMode {
@@ -94,7 +94,7 @@ impl DestMode {
 ///
 /// Refer to the PIC10F200 datasheet for the exact meaning of each instruction
 ///
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Op {
     Add(Reg, DestMode),          // ADDWF
     And(Reg, DestMode),          // ANDWF
@@ -239,5 +239,19 @@ pub fn parse_op(word: ProgramWord) -> Option<Op> {
         ),
 
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_op;
+    use super::Op::*;
+
+    use super::ProgramWord;
+
+    #[test]
+    fn zero_is_nop() {
+        let word = ProgramWord::from_u16(0b000000000000).unwrap();
+        assert_eq!(parse_op(word), Some(Nop));
     }
 }
